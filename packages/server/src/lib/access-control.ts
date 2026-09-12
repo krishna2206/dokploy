@@ -193,7 +193,7 @@ export const memberRole = ac.newRole({
 	logs: ["read"],
 	monitoring: ["read"],
 	// Org-level enterprise resources — member cannot manage these
-	server: [],
+	server: ["read"],
 	registry: [],
 	certificate: [],
 	destination: [],

@@ -1,4 +1,5 @@
 import {
+	canDeployToManager,
 	clearOldDeployments,
 	createApplication,
 	createDomain,
@@ -99,6 +100,17 @@ export const applicationRouter = createTRPCRouter({
 						code: "UNAUTHORIZED",
 						message: "You need to use a server to create an application",
 					});
+				}
+
+				if (!input.serverId) {
+					const allowedOnManager = await canDeployToManager(ctx.session);
+					if (!allowedOnManager) {
+						throw new TRPCError({
+							code: "UNAUTHORIZED",
+							message:
+								"You are not authorized to deploy on the manager server. Please select your assigned remote server.",
+						});
+					}
 				}
 
 				if (project.organizationId !== ctx.session.activeOrganizationId) {

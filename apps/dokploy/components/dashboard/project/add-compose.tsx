@@ -71,20 +71,21 @@ interface Props {
 
 export const AddCompose = ({ environmentId, projectName }: Props) => {
 	const utils = api.useUtils();
+	const { data: auth } = api.user.get.useQuery();
+	const isOwnerOrAdmin = auth?.role === "owner" || auth?.role === "admin";
 	const [visible, setVisible] = useState(false);
 	const slug = slugify(projectName);
 	const { data: isCloud } = api.settings.isCloud.useQuery();
 	const { data: webServerSettings } =
 		api.settings.getWebServerSettings.useQuery();
-	const showLocalOption = !isCloud && !webServerSettings?.remoteServersOnly;
 	const { data: servers } = api.server.withSSHKey.useQuery();
 	const { mutateAsync, isPending, error, isError } =
 		api.compose.create.useMutation();
 
-	const hasServers = servers && servers.length > 0;
-	// Show dropdown logic based on cloud environment
-	// Cloud: show only if there are remote servers (no Dokploy option)
-	// Self-hosted: show only if there are remote servers (Dokploy is default, hide if no remote servers)
+	const hasServers = !!(servers && servers.length > 0);
+	const isRestrictedUser = !isOwnerOrAdmin && hasServers;
+	const showLocalOption =
+		!isCloud && !webServerSettings?.remoteServersOnly && !isRestrictedUser;
 	const shouldShowServerDropdown = hasServers;
 
 	const form = useForm<AddCompose>({
@@ -101,14 +102,31 @@ export const AddCompose = ({ environmentId, projectName }: Props) => {
 		form.reset();
 	}, [form, form.reset, form.formState.isSubmitSuccessful]);
 
+	useEffect(() => {
+		if (visible && !showLocalOption && servers && servers.length > 0) {
+			const currentServerId = form.getValues("serverId");
+			if (!currentServerId || currentServerId === "dokploy") {
+				form.setValue("serverId", servers[0].serverId);
+			}
+		}
+	}, [visible, showLocalOption, servers, form]);
+
 	const onSubmit = async (data: AddCompose) => {
+		const effectiveServerId =
+			data.serverId === "dokploy"
+				? undefined
+				: data.serverId ||
+					(!showLocalOption && servers?.[0]?.serverId
+						? servers[0].serverId
+						: undefined);
+
 		await mutateAsync({
 			name: data.name,
 			description: data.description,
 			environmentId,
 			composeType: data.composeType,
 			appName: data.appName,
-			serverId: data.serverId === "dokploy" ? undefined : data.serverId,
+			serverId: effectiveServerId,
 		})
 			.then(async () => {
 				toast.success("Compose Created");
@@ -205,8 +223,9 @@ export const AddCompose = ({ environmentId, projectName }: Props) => {
 
 										<Select
 											onValueChange={field.onChange}
-											defaultValue={
-												field.value || (showLocalOption ? "dokploy" : undefined)
+											value={
+												field.value ||
+												(showLocalOption ? "dokploy" : servers?.[0]?.serverId)
 											}
 										>
 											<SelectTrigger>

@@ -279,3 +279,29 @@ export const getAccessibleServerIds = async (session: {
 
 	return new Set(memberRecord?.accessedServers ?? []);
 };
+
+export const canDeployToManager = async (session: {
+	userId: string;
+	activeOrganizationId: string;
+}): Promise<boolean> => {
+	const { userId, activeOrganizationId } = session;
+
+	const memberRecord = await db.query.member.findFirst({
+		where: and(
+			eq(member.userId, userId),
+			eq(member.organizationId, activeOrganizationId),
+		),
+		columns: { accessedServers: true, role: true },
+	});
+
+	if (!memberRecord) return false;
+	if (memberRecord.role === "owner" || memberRecord.role === "admin") {
+		return true;
+	}
+
+	if (memberRecord.accessedServers && memberRecord.accessedServers.length > 0) {
+		return false;
+	}
+
+	return true;
+};

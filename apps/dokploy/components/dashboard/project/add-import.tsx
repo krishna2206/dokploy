@@ -90,9 +90,14 @@ export const AddImport = ({ environmentId, projectName }: Props) => {
 	const [templateInfo, setTemplateInfo] = useState<TemplateInfo | null>(null);
 
 	const slug = slugify(projectName);
+	const { data: auth } = api.user.get.useQuery();
+	const isOwnerOrAdmin = auth?.role === "owner" || auth?.role === "admin";
 	const { data: isCloud } = api.settings.isCloud.useQuery();
 	const { data: servers } = api.server.withSSHKey.useQuery();
-	const shouldShowServerDropdown = !!(servers && servers.length > 0);
+	const hasServers = !!(servers && servers.length > 0);
+	const isRestrictedUser = !isOwnerOrAdmin && hasServers;
+	const showLocalOption = !isCloud && !isRestrictedUser;
+	const shouldShowServerDropdown = hasServers;
 
 	const { mutateAsync: previewTemplate, isPending: isProcessing } =
 		api.compose.previewTemplate.useMutation();
@@ -119,12 +124,20 @@ export const AddImport = ({ environmentId, projectName }: Props) => {
 		setVisible(open);
 	};
 
+	const getEffectiveServerId = (sid?: string) =>
+		sid === "dokploy"
+			? undefined
+			: sid ||
+				(!showLocalOption && servers?.[0]?.serverId
+					? servers[0].serverId
+					: undefined);
+
 	const handleLoad = async (data: AddImport) => {
 		try {
 			const result = await previewTemplate({
 				appName: data.appName,
 				base64: data.base64.trim(),
-				serverId: data.serverId === "dokploy" ? undefined : data.serverId,
+				serverId: getEffectiveServerId(data.serverId),
 			});
 			setTemplateInfo(result);
 			setPreviewOpen(true);
@@ -143,7 +156,7 @@ export const AddImport = ({ environmentId, projectName }: Props) => {
 				appName: data.appName,
 				environmentId,
 				composeType: "docker-compose",
-				serverId: data.serverId === "dokploy" ? undefined : data.serverId,
+				serverId: getEffectiveServerId(data.serverId),
 			});
 			await importCompose({
 				composeId: compose.composeId,
@@ -245,20 +258,21 @@ export const AddImport = ({ environmentId, projectName }: Props) => {
 											</TooltipProvider>
 											<Select
 												onValueChange={field.onChange}
-												defaultValue={
-													field.value || (!isCloud ? "dokploy" : undefined)
+												value={
+													field.value ||
+													(showLocalOption ? "dokploy" : servers?.[0]?.serverId)
 												}
 											>
 												<SelectTrigger>
 													<SelectValue
 														placeholder={
-															!isCloud ? "Dokploy" : "Select a Server"
+															showLocalOption ? "Dokploy" : "Select a Server"
 														}
 													/>
 												</SelectTrigger>
 												<SelectContent>
 													<SelectGroup>
-														{!isCloud && (
+														{showLocalOption && (
 															<SelectItem value="dokploy">
 																<span className="flex items-center gap-2 justify-between w-full">
 																	<span>Dokploy</span>
