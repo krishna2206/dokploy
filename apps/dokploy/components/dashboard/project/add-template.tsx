@@ -117,6 +117,8 @@ export const AddTemplate = ({ environmentId, baseUrl }: Props) => {
 		},
 	);
 	const { data: isCloud } = api.settings.isCloud.useQuery();
+	const { data: auth } = api.user.get.useQuery();
+	const isOwnerOrAdmin = auth?.role === "owner" || auth?.role === "admin";
 	const { data: servers } = api.server.withSSHKey.useQuery();
 	const { data: tags, isPending: isLoadingTags } = api.compose.getTags.useQuery(
 		{ baseUrl: customBaseUrl },
@@ -147,7 +149,7 @@ export const AddTemplate = ({ environmentId, baseUrl }: Props) => {
 
 				return { previousBookmarks };
 			},
-			onError: (err, variables, context) => {
+			onError: (_err, _variables, context) => {
 				if (context?.previousBookmarks) {
 					utils.user.getBookmarkedTemplates.setData(
 						undefined,
@@ -181,10 +183,9 @@ export const AddTemplate = ({ environmentId, baseUrl }: Props) => {
 			return matchesTags && matchesQuery && matchesBookmarks;
 		}) || [];
 
-	const hasServers = servers && servers.length > 0;
-	// Show dropdown logic based on cloud environment
-	// Cloud: show only if there are remote servers (no Dokploy option)
-	// Self-hosted: show only if there are remote servers (Dokploy is default, hide if no remote servers)
+	const hasServers = !!(servers && servers.length > 0);
+	const isRestrictedUser = !isOwnerOrAdmin && hasServers;
+	const showLocalOption = !isCloud && !isRestrictedUser;
 	const shouldShowServerDropdown = hasServers;
 
 	const handleToggleBookmark = async (
@@ -551,20 +552,25 @@ export const AddTemplate = ({ environmentId, baseUrl }: Props) => {
 																	onValueChange={(e) => {
 																		setServerId(e);
 																	}}
-																	defaultValue={
-																		!isCloud ? "dokploy" : undefined
+																	value={
+																		serverId ||
+																		(showLocalOption
+																			? "dokploy"
+																			: servers?.[0]?.serverId)
 																	}
 																>
 																	<SelectTrigger>
 																		<SelectValue
 																			placeholder={
-																				!isCloud ? "Dokploy" : "Select a Server"
+																				showLocalOption
+																					? "Dokploy"
+																					: "Select a Server"
 																			}
 																		/>
 																	</SelectTrigger>
 																	<SelectContent>
 																		<SelectGroup>
-																			{!isCloud && (
+																			{showLocalOption && (
 																				<SelectItem value="dokploy">
 																					<span className="flex items-center gap-2 justify-between w-full">
 																						<span>Dokploy</span>
@@ -589,7 +595,9 @@ export const AddTemplate = ({ environmentId, baseUrl }: Props) => {
 																			))}
 																			<SelectLabel>
 																				Servers (
-																				{servers?.length + (!isCloud ? 1 : 0)})
+																				{servers?.length +
+																					(showLocalOption ? 1 : 0)}
+																				)
 																			</SelectLabel>
 																		</SelectGroup>
 																	</SelectContent>
@@ -602,11 +610,17 @@ export const AddTemplate = ({ environmentId, baseUrl }: Props) => {
 														<AlertDialogAction
 															disabled={isPending}
 															onClick={async () => {
+																const effectiveServerId =
+																	serverId === "dokploy"
+																		? undefined
+																		: serverId ||
+																			(!showLocalOption &&
+																			servers?.[0]?.serverId
+																				? servers[0].serverId
+																				: undefined);
+
 																const promise = mutateAsync({
-																	serverId:
-																		serverId === "dokploy"
-																			? undefined
-																			: serverId,
+																	serverId: effectiveServerId,
 																	environmentId,
 																	id: template.id,
 																	baseUrl: customBaseUrl,
