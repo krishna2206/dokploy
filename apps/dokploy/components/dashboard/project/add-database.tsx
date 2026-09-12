@@ -1,6 +1,6 @@
 import { standardSchemaResolver as zodResolver } from "@hookform/resolvers/standard-schema";
 import { AlertTriangle, Database, HelpCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -258,8 +258,9 @@ export const AddDatabase = ({ environmentId, projectName }: Props) => {
 	useEffect(() => {
 		if (visible && !showLocalOption && servers && servers.length > 0) {
 			const currentServerId = form.getValues("serverId");
-			if (!currentServerId || currentServerId === "dokploy") {
-				form.setValue("serverId", servers[0].serverId as any);
+			const firstServer = servers[0];
+			if (firstServer && (!currentServerId || currentServerId === "dokploy")) {
+				form.setValue("serverId", firstServer.serverId as any);
 			}
 		}
 	}, [visible, showLocalOption, servers, form]);
@@ -278,12 +279,13 @@ export const AddDatabase = ({ environmentId, projectName }: Props) => {
 		const defaultDockerImage =
 			data.dockerImage || dockerImageDefaultPlaceholder[data.type];
 
+		const defaultRemoteServerId = servers?.[0]?.serverId;
 		const effectiveServerId =
 			data.serverId === "dokploy"
 				? undefined
 				: data.serverId ||
-					(!showLocalOption && servers?.[0]?.serverId
-						? servers[0].serverId
+					(!showLocalOption && defaultRemoteServerId
+						? defaultRemoteServerId
 						: undefined);
 
 		let promise: Promise<unknown> | null = null;
