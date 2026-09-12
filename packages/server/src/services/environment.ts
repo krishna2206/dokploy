@@ -217,27 +217,21 @@ export const findEnvironmentsByProjectId = async (projectId: string) => {
 		with: {
 			applications: {
 				columns: { ...serviceColumns, applicationId: true, icon: true },
-				with: { server: { columns: { name: true } } },
 			},
 			mariadb: {
 				columns: { ...serviceColumns, mariadbId: true },
-				with: { server: { columns: { name: true } } },
 			},
 			mongo: {
 				columns: { ...serviceColumns, mongoId: true },
-				with: { server: { columns: { name: true } } },
 			},
 			mysql: {
 				columns: { ...serviceColumns, mysqlId: true },
-				with: { server: { columns: { name: true } } },
 			},
 			postgres: {
 				columns: { ...serviceColumns, postgresId: true },
-				with: { server: { columns: { name: true } } },
 			},
 			redis: {
 				columns: { ...serviceColumns, redisId: true },
-				with: { server: { columns: { name: true } } },
 			},
 			compose: {
 				columns: {
@@ -246,11 +240,9 @@ export const findEnvironmentsByProjectId = async (projectId: string) => {
 					composeStatus: true,
 					icon: true,
 				},
-				with: { server: { columns: { name: true } } },
 			},
 			libsql: {
 				columns: { ...serviceColumns, libsqlId: true },
-				with: { server: { columns: { name: true } } },
 			},
 			project: true,
 		},
