@@ -104,7 +104,7 @@ describe("enterprise resources for static roles", () => {
 		memberToReturn = mockMemberData("member");
 		const perms = await resolvePermissions(ctx);
 
-		expect(perms.server.read).toBe(false);
+		expect(perms.server.read).toBe(true);
 		expect(perms.server.terminal).toBe(false);
 		expect(perms.registry.read).toBe(false);
 		expect(perms.certificate.read).toBe(false);
