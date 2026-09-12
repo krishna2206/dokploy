@@ -7,7 +7,7 @@
 const nextConfig = {
 	reactStrictMode: true,
 	typescript: {
-		ignoreBuildErrors: true,
+		ignoreBuildErrors: false,
 	},
 	transpilePackages: ["@dokploy/server"],
 	async headers() {

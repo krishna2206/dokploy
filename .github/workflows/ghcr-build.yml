@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - custom-canary
+  pull_request:
+    branches:
+      - custom-canary
   workflow_dispatch:
 
 permissions:
@@ -11,7 +14,36 @@ permissions:
   packages: write
 
 jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.4.0
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build server package
+        run: pnpm server:build
+
+      - name: Strict TypeScript Typecheck
+        run: pnpm typecheck
+
+      - name: Run Unit Tests
+        run: pnpm --filter=dokploy test
+
   docker-amd:
+    needs: [quality-gate]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -42,6 +74,8 @@ jobs:
             --push .
 
   docker-arm:
+    needs: [quality-gate]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout repository
@@ -73,6 +107,7 @@ jobs:
 
   create-multiarch-manifest:
     needs: [docker-amd, docker-arm]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
