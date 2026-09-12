@@ -138,7 +138,6 @@ export const projectRouter = createTRPCRouter({
 										applicationId: true,
 										icon: true,
 									},
-									with: { server: { columns: { name: true } } },
 									where: buildServiceFilter(
 										applications.applicationId,
 										accessedServices,
@@ -150,7 +149,6 @@ export const projectRouter = createTRPCRouter({
 										composeId: true,
 										composeStatus: true,
 									},
-									with: { server: { columns: { name: true } } },
 									where: buildServiceFilter(
 										compose.composeId,
 										accessedServices,
@@ -158,12 +156,10 @@ export const projectRouter = createTRPCRouter({
 								},
 								libsql: {
 									columns: { ...serviceColumns, libsqlId: true },
-									with: { server: { columns: { name: true } } },
 									where: buildServiceFilter(libsql.libsqlId, accessedServices),
 								},
 								mariadb: {
 									columns: { ...serviceColumns, mariadbId: true },
-									with: { server: { columns: { name: true } } },
 									where: buildServiceFilter(
 										mariadb.mariadbId,
 										accessedServices,
@@ -171,17 +167,14 @@ export const projectRouter = createTRPCRouter({
 								},
 								mongo: {
 									columns: { ...serviceColumns, mongoId: true },
-									with: { server: { columns: { name: true } } },
 									where: buildServiceFilter(mongo.mongoId, accessedServices),
 								},
 								mysql: {
 									columns: { ...serviceColumns, mysqlId: true },
-									with: { server: { columns: { name: true } } },
 									where: buildServiceFilter(mysql.mysqlId, accessedServices),
 								},
 								postgres: {
 									columns: { ...serviceColumns, postgresId: true },
-									with: { server: { columns: { name: true } } },
 									where: buildServiceFilter(
 										postgres.postgresId,
 										accessedServices,
@@ -189,7 +182,6 @@ export const projectRouter = createTRPCRouter({
 								},
 								redis: {
 									columns: { ...serviceColumns, redisId: true },
-									with: { server: { columns: { name: true } } },
 									where: buildServiceFilter(redis.redisId, accessedServices),
 								},
 							},
