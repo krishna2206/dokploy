@@ -100,19 +100,21 @@ export const AddApplication = ({ environmentId, projectName }: Props) => {
 	useEffect(() => {
 		if (visible && !showLocalOption && servers && servers.length > 0) {
 			const currentServerId = form.getValues("serverId");
-			if (!currentServerId || currentServerId === "dokploy") {
-				form.setValue("serverId", servers[0].serverId);
+			const firstServer = servers[0];
+			if (firstServer && (!currentServerId || currentServerId === "dokploy")) {
+				form.setValue("serverId", firstServer.serverId);
 			}
 		}
 	}, [visible, showLocalOption, servers, form]);
 
 	const onSubmit = async (data: AddTemplate) => {
+		const defaultRemoteServerId = servers?.[0]?.serverId;
 		const effectiveServerId =
 			data.serverId === "dokploy"
 				? undefined
 				: data.serverId ||
-					(!showLocalOption && servers?.[0]?.serverId
-						? servers[0].serverId
+					(!showLocalOption && defaultRemoteServerId
+						? defaultRemoteServerId
 						: undefined);
 
 		await mutateAsync({
