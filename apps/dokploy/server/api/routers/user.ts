@@ -68,7 +68,20 @@ export const userRouter = createTRPCRouter({
 		return await db.query.member.findMany({
 			where: eq(member.organizationId, ctx.session.activeOrganizationId),
 			with: {
-				user: true,
+				// `user: true` shipped every column of the table for every member,
+				// including licenseKey, the Stripe identifiers, trustedOrigins and the
+				// avatar blob. Only these are consumed (show-users.tsx and
+				// show-sessions.tsx).
+				user: {
+					columns: {
+						id: true,
+						firstName: true,
+						lastName: true,
+						email: true,
+						banned: true,
+						twoFactorEnabled: true,
+					},
+				},
 			},
 			orderBy: [asc(member.createdAt)],
 		});
@@ -86,7 +99,14 @@ export const userRouter = createTRPCRouter({
 					eq(member.organizationId, ctx.session?.activeOrganizationId || ""),
 				),
 				with: {
-					user: true,
+					// Consumers (add-permissions.tsx) only read the member-level
+					// permission columns, never the nested user record.
+					user: {
+						columns: {
+							id: true,
+							email: true,
+						},
+					},
 				},
 			});
 
