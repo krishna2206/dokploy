@@ -232,6 +232,17 @@ export const apiReadStatsLogs = z.object({
 		.optional(),
 });
 
+/**
+ * Hard cap for the `user.image` column.
+ *
+ * The value is inlined into every `user.get`/`user.all` response, so an
+ * oversized avatar inflates every API payload and page navigation. The client
+ * normalizes uploads well below this limit
+ * (`AVATAR_TARGET_DATA_URL_LENGTH` in apps/dokploy/lib/avatar-utils.ts); this
+ * cap rejects anything that bypasses the UI.
+ */
+export const AVATAR_MAX_DATA_URL_LENGTH = 64 * 1024;
+
 export const apiUpdateUser = createSchema.partial().extend({
 	email: z
 		.string()
@@ -242,4 +253,11 @@ export const apiUpdateUser = createSchema.partial().extend({
 	currentPassword: z.string().optional(),
 	firstName: z.string().optional(),
 	lastName: z.string().optional(),
+	image: z
+		.string()
+		.max(
+			AVATAR_MAX_DATA_URL_LENGTH,
+			"Avatar is too large, please upload a smaller image",
+		)
+		.optional(),
 });

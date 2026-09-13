@@ -26,7 +26,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import { getAvatarType, isSolidColorAvatar } from "@/lib/avatar-utils";
+import {
+	getAvatarType,
+	isSolidColorAvatar,
+	normalizeAvatarFile,
+} from "@/lib/avatar-utils";
 import { generateSHA256Hash, getFallbackAvatarInitials } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { Configure2FA } from "./configure-2fa";
@@ -338,22 +342,32 @@ export const ProfileForm = () => {
 																			accept="image/*"
 																			className="hidden"
 																			onChange={async (e) => {
-																				const file = e.target.files?.[0];
-																				if (file) {
-																					// max file size 2mb
-																					if (file.size > 2 * 1024 * 1024) {
-																						toast.error(
-																							"Image size must be less than 2MB",
-																						);
-																						return;
-																					}
-																					const reader = new FileReader();
-																					reader.onload = (event) => {
-																						const result = event.target
-																							?.result as string;
-																						field.onChange(result);
-																					};
-																					reader.readAsDataURL(file);
+																				const input = e.target;
+																				const file = input.files?.[0];
+																				if (!file) {
+																					return;
+																				}
+
+																				// max file size 2mb
+																				if (file.size > 2 * 1024 * 1024) {
+																					toast.error(
+																						"Image size must be less than 2MB",
+																					);
+																					input.value = "";
+																					return;
+																				}
+
+																				try {
+																					field.onChange(
+																						await normalizeAvatarFile(file),
+																					);
+																				} catch {
+																					toast.error(
+																						"Unable to process this image, please try another file",
+																					);
+																				} finally {
+																					// Allow re-selecting the same file.
+																					input.value = "";
 																				}
 																			}}
 																		/>
