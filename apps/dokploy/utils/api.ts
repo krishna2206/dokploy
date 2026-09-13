@@ -73,7 +73,26 @@ const links =
 
 export const api = createTRPCNext<AppRouter>({
 	config() {
-		return { links };
+		return {
+			links,
+			queryClientConfig: {
+				defaultOptions: {
+					queries: {
+						/**
+						 * Pages prefetch their queries in `getServerSideProps` and ship the
+						 * dehydrated cache in `trpcState`. With React Query's default
+						 * `staleTime: 0` that hydrated data is stale on arrival, so every
+						 * navigation refetched the exact same payload it had just received
+						 * through `/_next/data/<buildId>/<route>.json`.
+						 *
+						 * Mutations still force a refresh through `utils.<router>.invalidate()`,
+						 * and live views keep their explicit `refetchInterval`.
+						 */
+						staleTime: 30_000,
+					},
+				},
+			},
+		};
 	},
 	ssr: false,
 	transformer: superjson,
